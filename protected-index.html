@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Todo List</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📝</text></svg>">
+    <link rel="stylesheet" href="style.css">
+    <!-- Supabase JavaScript Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Supabase Configuration -->
+    <script src="config.js"></script>
+    <style>
+        /* Authentication additions to existing styles */
+        .auth-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: white;
+            font-size: 0.875rem;
+        }
+        
+        .auth-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.875rem;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .auth-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .signout-btn {
+            background: rgba(239, 68, 68, 0.8);
+            border-color: rgba(239, 68, 68, 0.5);
+        }
+        
+        .signout-btn:hover {
+            background: rgba(220, 38, 38, 0.9);
+        }
+        
+        .protected-content {
+            display: none;
+        }
+        
+        .protected-content.authenticated {
+            display: block;
+        }
+        
+        .auth-loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+        
+        .spinner {
+            width: 2rem;
+            height: 2rem;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="auth-header">
+            <h1>My Todo List</h1>
+            <div class="user-info" id="user-info" style="display: none;">
+                <span id="user-email"></span>
+                <button class="auth-btn signout-btn" id="signout-btn">Sign Out</button>
+            </div>
+        </header>
+        
+        <!-- Loading State -->
+        <div class="auth-loading" id="auth-loading">
+            <div class="spinner"></div>
+            <p>Loading your todos...</p>
+        </div>
+        
+        <!-- Protected Content -->
+        <main class="protected-content" id="protected-content">
+            <section class="input-section">
+                <form id="todo-form" role="form" aria-label="Add new task">
+                    <div class="input-group">
+                        <input 
+                            type="text" 
+                            id="task-input" 
+                            placeholder="Enter a new task..." 
+                            aria-label="New task description"
+                            maxlength="200"
+                            required
+                        >
+                        <button type="submit" id="add-btn" aria-label="Add task">
+                            Add Task
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="filter-section">
+                <div class="filter-buttons" role="group" aria-label="Filter tasks">
+                    <button class="filter-btn active" data-filter="all" aria-label="Show all tasks">
+                        All <span class="count" id="all-count">0</span>
+                    </button>
+                    <button class="filter-btn" data-filter="active" aria-label="Show active tasks">
+                        Active <span class="count" id="active-count">0</span>
+                    </button>
+                    <button class="filter-btn" data-filter="completed" aria-label="Show completed tasks">
+                        Completed <span class="count" id="completed-count">0</span>
+                    </button>
+                </div>
+            </section>
+
+            <section class="tasks-section">
+                <div class="task-stats" id="task-stats" aria-live="polite">
+                    <span id="stats-text">No tasks yet</span>
+                </div>
+                
+                <!-- Loading indicator -->
+                <div class="loading-indicator" id="loading-indicator">
+                    <div class="spinner"></div>
+                    <p>Loading your tasks...</p>
+                </div>
+                
+                <!-- Error state -->
+                <div class="error-state" id="error-state" style="display: none;">
+                    <div class="error-content">
+                        <p>⚠️ Unable to connect to the server</p>
+                        <button class="retry-btn" id="retry-btn">Try Again</button>
+                    </div>
+                </div>
+                
+                <ul class="task-list" id="task-list" role="list" aria-label="Task list">
+                    <!-- Tasks will be dynamically inserted here -->
+                </ul>
+                
+                <div class="empty-state" id="empty-state">
+                    <p>🎯 No tasks yet! Add one above to get started.</p>
+                </div>
+                
+                <div class="bulk-actions" id="bulk-actions">
+                    <button class="clear-completed-btn" id="clear-completed" aria-label="Clear all completed tasks">
+                        Clear Completed
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Task template for JavaScript -->
+    <template id="task-template">
+        <li class="task-item" role="listitem">
+            <div class="task-content">
+                <input type="checkbox" class="task-checkbox" aria-label="Mark task as complete">
+                <span class="task-text" tabindex="0" role="button" aria-label="Click to edit task"></span>
+                <div class="task-actions">
+                    <button class="edit-btn" aria-label="Edit task" title="Edit">
+                        ✏️
+                    </button>
+                    <button class="delete-btn" aria-label="Delete task" title="Delete">
+                        🗑️
+                    </button>
+                </div>
+            </div>
+            <div class="task-meta">
+                <small class="task-date"></small>
+            </div>
+        </li>
+    </template>
+
+    <script>
+        // Authentication wrapper for the todo app
+        let currentUser = null;
+        let isAuthenticated = false;
+
+        // Check authentication status
+        async function checkAuthStatus() {
+            try {
+                const { data: { user }, error } = await window.supabaseClient.auth.getUser();
+                
+                if (error) {
+                    console.error('Auth check error:', error);
+                    redirectToAuth();
+                    return false;
+                }
+
+                if (user) {
+                    currentUser = user;
+                    isAuthenticated = true;
+                    showAuthenticatedState(user);
+                    return true;
+                } else {
+                    redirectToAuth();
+                    return false;
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                redirectToAuth();
+                return false;
+            }
+        }
+
+        function showAuthenticatedState(user) {
+            // Show user info
+            document.getElementById('user-email').textContent = user.email;
+            document.getElementById('user-info').style.display = 'flex';
+            
+            // Hide loading, show content
+            document.getElementById('auth-loading').style.display = 'none';
+            document.getElementById('protected-content').classList.add('authenticated');
+        }
+
+        function redirectToAuth() {
+            window.location.href = 'auth-index.html';
+        }
+
+        async function signOut() {
+            try {
+                const { error } = await window.supabaseClient.auth.signOut();
+                if (error) throw error;
+                redirectToAuth();
+            } catch (error) {
+                console.error('Sign out error:', error);
+                alert('Failed to sign out. Please try again.');
+            }
+        }
+
+        // Initialize authentication
+        window.addEventListener('load', async () => {
+            // Check if Supabase is configured
+            if (!window.supabaseClient) {
+                alert('Authentication service not available. Please check configuration.');
+                return;
+            }
+
+            // Check authentication status
+            const authenticated = await checkAuthStatus();
+            
+            if (authenticated) {
+                // Load the main todo app script
+                const script = document.createElement('script');
+                script.src = 'script.js';
+                script.onload = () => {
+                    console.log('Todo app loaded successfully');
+                };
+                script.onerror = () => {
+                    console.error('Failed to load todo app');
+                    alert('Failed to load the application. Please refresh the page.');
+                };
+                document.head.appendChild(script);
+            }
+        });
+
+        // Sign out event listener
+        document.getElementById('signout-btn').addEventListener('click', signOut);
+
+        // Listen for auth changes
+        if (window.supabaseClient) {
+            window.supabaseClient.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_OUT') {
+                    redirectToAuth();
+                } else if (event === 'SIGNED_IN' && session) {
+                    currentUser = session.user;
+                    isAuthenticated = true;
+                    showAuthenticatedState(session.user);
+                }
+            });
+        }
+    </script>
+</body>
+</html>

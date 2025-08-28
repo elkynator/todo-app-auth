@@ -1,0 +1,11 @@
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore test files (optional)
+quick-test.html
+auth-test.html
+
+# Ignore sensitive files (if any)
+*.env
+.env.local

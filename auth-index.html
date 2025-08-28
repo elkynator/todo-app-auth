@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Todo List - Sign In</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📝</text></svg>">
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --border-focus: #3b82f6;
+            --border-radius: 0.5rem;
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .auth-container {
+            background: var(--bg-primary);
+            padding: 2.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .auth-header h1 {
+            color: var(--text-primary);
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .auth-header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .auth-tabs {
+            display: flex;
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            padding: 0.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 0.75rem;
+            background: transparent;
+            border: none;
+            border-radius: calc(var(--border-radius) - 0.25rem);
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .tab-btn.active {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group label {
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .form-group input {
+            padding: 0.875rem;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .submit-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.875rem;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 0.5rem;
+        }
+
+        .submit-btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .submit-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            background: #fef2f2;
+            color: var(--danger-color);
+            padding: 0.75rem;
+            border-radius: var(--border-radius);
+            border: 1px solid #fecaca;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+        }
+
+        .success-message {
+            background: #dcfce7;
+            color: var(--success-color);
+            padding: 0.75rem;
+            border-radius: var(--border-radius);
+            border: 1px solid #bbf7d0;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .spinner {
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .form-footer {
+            text-align: center;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .password-requirements {
+            background: var(--bg-secondary);
+            padding: 0.75rem;
+            border-radius: var(--border-radius);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        .password-requirements ul {
+            margin: 0.5rem 0 0 1rem;
+        }
+
+        .requirement.valid {
+            color: var(--success-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-header">
+            <h1>📝 My Todo List</h1>
+            <p>Sign in to access your personal todos</p>
+        </div>
+
+        <div class="auth-tabs">
+            <button class="tab-btn active" id="signin-tab">Sign In</button>
+            <button class="tab-btn" id="signup-tab">Sign Up</button>
+        </div>
+
+        <!-- Sign In Form -->
+        <form class="auth-form" id="signin-form">
+            <div class="form-group">
+                <label for="signin-email">Email</label>
+                <input type="email" id="signin-email" placeholder="Enter your email" required>
+            </div>
+            <div class="form-group">
+                <label for="signin-password">Password</label>
+                <input type="password" id="signin-password" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="submit-btn" id="signin-btn">
+                <span class="btn-text">Sign In</span>
+            </button>
+        </form>
+
+        <!-- Sign Up Form -->
+        <form class="auth-form hidden" id="signup-form">
+            <div class="form-group">
+                <label for="signup-email">Email</label>
+                <input type="email" id="signup-email" placeholder="Enter your email" required>
+            </div>
+            <div class="form-group">
+                <label for="signup-password">Password</label>
+                <input type="password" id="signup-password" placeholder="Create a password" required minlength="6">
+                <div class="password-requirements">
+                    <strong>Password requirements:</strong>
+                    <ul>
+                        <li class="requirement" id="req-length">At least 6 characters</li>
+                        <li class="requirement" id="req-letter">At least one letter</li>
+                        <li class="requirement" id="req-number">At least one number</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="signup-confirm">Confirm Password</label>
+                <input type="password" id="signup-confirm" placeholder="Confirm your password" required>
+            </div>
+            <button type="submit" class="submit-btn" id="signup-btn">
+                <span class="btn-text">Create Account</span>
+            </button>
+        </form>
+
+        <div id="message-container"></div>
+
+        <div class="form-footer">
+            <p>Your todos are securely stored and synced across devices</p>
+        </div>
+    </div>
+
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    
+    <script>
+        // Tab switching
+        const signinTab = document.getElementById('signin-tab');
+        const signupTab = document.getElementById('signup-tab');
+        const signinForm = document.getElementById('signin-form');
+        const signupForm = document.getElementById('signup-form');
+        const messageContainer = document.getElementById('message-container');
+
+        signinTab.addEventListener('click', () => {
+            signinTab.classList.add('active');
+            signupTab.classList.remove('active');
+            signinForm.classList.remove('hidden');
+            signupForm.classList.add('hidden');
+            clearMessages();
+        });
+
+        signupTab.addEventListener('click', () => {
+            signupTab.classList.add('active');
+            signinTab.classList.remove('active');
+            signupForm.classList.remove('hidden');
+            signinForm.classList.add('hidden');
+            clearMessages();
+        });
+
+        // Password validation
+        const signupPassword = document.getElementById('signup-password');
+        const signupConfirm = document.getElementById('signup-confirm');
+
+        signupPassword.addEventListener('input', validatePassword);
+        signupConfirm.addEventListener('input', validatePasswordMatch);
+
+        function validatePassword() {
+            const password = signupPassword.value;
+            const lengthReq = document.getElementById('req-length');
+            const letterReq = document.getElementById('req-letter');
+            const numberReq = document.getElementById('req-number');
+
+            // Length check
+            if (password.length >= 6) {
+                lengthReq.classList.add('valid');
+            } else {
+                lengthReq.classList.remove('valid');
+            }
+
+            // Letter check
+            if (/[a-zA-Z]/.test(password)) {
+                letterReq.classList.add('valid');
+            } else {
+                letterReq.classList.remove('valid');
+            }
+
+            // Number check
+            if (/\d/.test(password)) {
+                numberReq.classList.add('valid');
+            } else {
+                numberReq.classList.remove('valid');
+            }
+
+            validatePasswordMatch();
+        }
+
+        function validatePasswordMatch() {
+            const password = signupPassword.value;
+            const confirm = signupConfirm.value;
+            
+            if (confirm && password !== confirm) {
+                signupConfirm.setCustomValidity('Passwords do not match');
+            } else {
+                signupConfirm.setCustomValidity('');
+            }
+        }
+
+        // Message functions
+        function showMessage(message, type) {
+            messageContainer.innerHTML = `<div class="${type}-message">${message}</div>`;
+        }
+
+        function clearMessages() {
+            messageContainer.innerHTML = '';
+        }
+
+        function setLoading(button, loading) {
+            const btnText = button.querySelector('.btn-text');
+            if (loading) {
+                button.disabled = true;
+                btnText.innerHTML = '<div class="loading"><div class="spinner"></div>Loading...</div>';
+            } else {
+                button.disabled = false;
+                btnText.textContent = button.id === 'signin-btn' ? 'Sign In' : 'Create Account';
+            }
+        }
+
+        // Authentication functions
+        async function signIn(email, password) {
+            const btn = document.getElementById('signin-btn');
+            try {
+                setLoading(btn, true);
+                clearMessages();
+
+                const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) throw error;
+
+                showMessage('Sign in successful! Redirecting...', 'success');
+                
+                // Redirect to main app
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1500);
+
+            } catch (error) {
+                console.error('Sign in error:', error);
+                showMessage(`Sign in failed: ${error.message}`, 'error');
+            } finally {
+                setLoading(btn, false);
+            }
+        }
+
+        async function signUp(email, password) {
+            const btn = document.getElementById('signup-btn');
+            try {
+                setLoading(btn, true);
+                clearMessages();
+
+                const { data, error } = await window.supabaseClient.auth.signUp({
+                    email: email,
+                    password: password
+                });
+
+                if (error) throw error;
+
+                if (data.user && !data.user.email_confirmed_at) {
+                    showMessage('Account created! Please check your email for a verification link.', 'success');
+                } else {
+                    showMessage('Account created successfully! Redirecting...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1500);
+                }
+
+            } catch (error) {
+                console.error('Sign up error:', error);
+                showMessage(`Sign up failed: ${error.message}`, 'error');
+            } finally {
+                setLoading(btn, false);
+            }
+        }
+
+        // Form submissions
+        signinForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('signin-email').value;
+            const password = document.getElementById('signin-password').value;
+            await signIn(email, password);
+        });
+
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const confirm = document.getElementById('signup-confirm').value;
+
+            if (password !== confirm) {
+                showMessage('Passwords do not match', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                showMessage('Password must be at least 6 characters', 'error');
+                return;
+            }
+
+            await signUp(email, password);
+        });
+
+        // Check if already signed in
+        window.addEventListener('load', async () => {
+            if (!window.supabaseClient) {
+                showMessage('Unable to connect to authentication service', 'error');
+                return;
+            }
+
+            try {
+                const { data: { user } } = await window.supabaseClient.auth.getUser();
+                if (user) {
+                    // Already signed in, redirect
+                    window.location.href = 'index.html';
+                }
+            } catch (error) {
+                console.error('Auth check error:', error);
+            }
+        });
+    </script>
+</body>
+</html>
