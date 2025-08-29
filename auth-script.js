@@ -329,7 +329,7 @@ function setupPollingUpdates() {
                         console.log('Polling update failed:', error.message);
                     }
                 }
-            }, 3000); // Poll every 3 seconds
+            }, 30000); // Poll every 30 seconds
         }
         
         // Start initial polling
@@ -338,7 +338,7 @@ function setupPollingUpdates() {
         // Store interval reference for cleanup
         pollingInterval = pollInterval;
         
-        showNotification('🔄 Smart polling enabled (3s intervals)', 'success');
+        showNotification('🔄 Smart polling enabled (30s intervals)', 'success');
         console.log('Smart polling setup completed');
         
     } catch (error) {
