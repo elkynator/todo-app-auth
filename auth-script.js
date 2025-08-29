@@ -9,7 +9,7 @@ let currentFilter = 'all';
 let editingTaskId = null;
 let isLoading = false;
 let isOnline = navigator.onLine;
-let realtimeSubscription = null;
+let pollingInterval = null; // Changed from realtimeSubscription
 
 // Authentication state (provided by protected-index.html)
 // currentUser and isAuthenticated are already defined
@@ -287,76 +287,71 @@ async function clearCompletedTasksFromDB() {
     }
 }
 
-// Real-time Subscriptions
-function setupRealtimeSubscription() {
+// Smart Polling for Updates (Replaces Real-time)
+function setupPollingUpdates() {
     if (!isSupabaseConfigured() || !isAuthenticated) {
-        console.log('Real-time updates not available');
+        console.log('Polling updates not available');
         return;
     }
 
     try {
-        realtimeSubscription = window.supabaseClient
-            .channel('todos-changes')
-            .on('postgres_changes', {
-                event: '*',
-                schema: 'public',
-                table: 'todos',
-                filter: `user_id=eq.${currentUser.id}`
-            }, (payload) => {
-                console.log('Real-time update received:', payload);
-                handleRealtimeUpdate(payload);
-            })
-            .subscribe((status) => {
-                console.log('Subscription status:', status);
-                if (status === 'SUBSCRIBED') {
-                    showNotification('🔄 Real-time sync enabled', 'success');
-                } else if (status === 'CHANNEL_ERROR') {
-                    console.warn('Real-time connection failed, but app will continue to work');
-                    showNotification('⚠️ Real-time sync unavailable (app still works)', 'warning');
-                }
+        let pollInterval;
+        let lastActivity = Date.now();
+        
+        // Track user activity
+        const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+        activityEvents.forEach(event => {
+            document.addEventListener(event, () => {
+                lastActivity = Date.now();
             });
-
+        });
+        
+        // Start polling when page becomes visible
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                clearInterval(pollInterval);
+                console.log('Page hidden - polling stopped');
+            } else {
+                startPolling();
+                console.log('Page visible - polling resumed');
+            }
+        });
+        
+        function startPolling() {
+            pollInterval = setInterval(async () => {
+                // Only poll if user has been active in last 30 seconds
+                const timeSinceActivity = Date.now() - lastActivity;
+                if (timeSinceActivity < 30000) {
+                    try {
+                        await loadTodos();
+                        console.log('Polling update completed');
+                    } catch (error) {
+                        console.log('Polling update failed:', error.message);
+                    }
+                }
+            }, 3000); // Poll every 3 seconds
+        }
+        
+        // Start initial polling
+        startPolling();
+        
+        // Store interval reference for cleanup
+        pollingInterval = pollInterval;
+        
+        showNotification('🔄 Smart polling enabled (3s intervals)', 'success');
+        console.log('Smart polling setup completed');
+        
     } catch (error) {
-        console.error('Failed to set up real-time subscription:', error);
+        console.error('Failed to set up polling updates:', error);
+        showNotification('⚠️ Polling setup failed (app still works)', 'warning');
     }
 }
 
-function handleRealtimeUpdate(payload) {
-    const { eventType, new: newRecord, old: oldRecord } = payload;
-    
-    switch (eventType) {
-        case 'INSERT':
-            if (!tasks.find(task => task.id === newRecord.id)) {
-                tasks.unshift(newRecord);
-                renderTasks();
-                showNotification('New task synced', 'info');
-            }
-            break;
-            
-        case 'UPDATE':
-            const taskIndex = tasks.findIndex(task => task.id === newRecord.id);
-            if (taskIndex !== -1) {
-                tasks[taskIndex] = newRecord;
-                renderTasks();
-                showNotification('Task updated', 'info');
-            }
-            break;
-            
-        case 'DELETE':
-            const initialLength = tasks.length;
-            tasks = tasks.filter(task => task.id !== oldRecord.id);
-            if (tasks.length < initialLength) {
-                renderTasks();
-                showNotification('Task deleted', 'info');
-            }
-            break;
-    }
-}
-
-function cleanupRealtimeSubscription() {
-    if (realtimeSubscription) {
-        window.supabaseClient.removeChannel(realtimeSubscription);
-        realtimeSubscription = null;
+function cleanupPollingUpdates() {
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+        console.log('Polling cleanup completed');
     }
 }
 
@@ -710,8 +705,8 @@ async function initApp() {
     // Load initial data
     await loadTasks();
     
-    // Set up real-time updates
-    setupRealtimeSubscription();
+    // Set up polling updates (replaces real-time)
+    setupPollingUpdates();
     
     // Focus input
     taskInput.focus();
@@ -722,7 +717,7 @@ async function initApp() {
 
 // Cleanup on page unload
 window.addEventListener('beforeunload', () => {
-    cleanupRealtimeSubscription();
+    cleanupPollingUpdates();
 });
 
 // Start the app when loaded by the auth wrapper

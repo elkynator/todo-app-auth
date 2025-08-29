@@ -15,11 +15,11 @@ const SUPABASE_CONFIG = {
             persistSession: true,
             detectSessionInUrl: true
         },
-        realtime: {
-            params: {
-                eventsPerSecond: 10
-            }
-        }
+        // realtime: {
+        //     params: {
+        //         eventsPerSecond: 10
+        //     }
+        // }
     }
 };
 
